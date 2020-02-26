@@ -4,14 +4,21 @@ import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import time
 
+image_files = {
+    'cones': {'left': 'images/Cones/view1.png', 'right': 'images/Cones/view2.png'},
+    'drumsticks': {'left': 'images/Drumsticks/view1.png', 'right': 'images/Drumsticks/view2.png'},
+}
+default_image = 'cones'
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--left_image', type=str, default='images/Cones/view1.png', help='Path to left image')
-parser.add_argument('--right_image', type=str, default='images/Cones/view2.png', help='Path to right image')
+parser.add_argument('--left_image', type=str, default=image_files[default_image]['left'], help='Path to left image')
+parser.add_argument('--right_image', type=str, default=image_files[default_image]['right'], help='Path to right image')
 parser.add_argument('--max_displacement_x', type=int, default=50, help='Maximum displacement value over x axis')
 parser.add_argument('--max_displacement_y', type=int, default=1, help='Maximum displacement value over y axis')
-parser.add_argument('--max_negative_displacement_x', type=int, default=0, help='Maximum negative displacement value over x axis')
-parser.add_argument('--max_negative_displacement_y', type=int, default=0, help='Maximum negative displacement value over y axis')
+parser.add_argument('--max_negative_displacement_x', type=int, default=0,
+                    help='Maximum negative displacement value over x axis')
+parser.add_argument('--max_negative_displacement_y', type=int, default=0,
+                    help='Maximum negative displacement value over y axis')
 parser.add_argument('--h_norm', type=int, default=1, help='Order of norm in h function')
 parser.add_argument('--alpha', type=int, default=10, help='Smoothing alpha parameter')
 parser.add_argument('--beta', type=int, default=30, help='Smoothing beta parameter')
@@ -45,7 +52,7 @@ def get_displacement(left_image, right_image,
 
     # NOTE: requires lots of memory
     L_expanded = expanded_array(left_image, D)
-    R_shifted = np.full((W, H, C, D), 10000000, dtype=np.int32)     # initialize with infinity
+    R_shifted = np.full((W, H, C, D), 10000000, dtype=np.int32)  # initialize with infinity
     for d in range(max_disp_x * max_disp_y):
         d_x = d % max_disp_x
         d_y = d // max_disp_x
