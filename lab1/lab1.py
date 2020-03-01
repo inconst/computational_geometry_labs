@@ -7,20 +7,21 @@ import time
 image_files = {
     'cones': {'left': 'images/Cones/view1.png', 'right': 'images/Cones/view2.png'},
     'drumsticks': {'left': 'images/Drumsticks/view1.png', 'right': 'images/Drumsticks/view2.png'},
+    'test': {'left': 'images/Test/left.png', 'right': 'images/Test/right.png'}
 }
-default_image = 'cones'
+default_image = 'test'
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--left_image', type=str, default=image_files[default_image]['left'], help='Path to left image')
 parser.add_argument('--right_image', type=str, default=image_files[default_image]['right'], help='Path to right image')
-parser.add_argument('--max_displacement_x', type=int, default=50, help='Maximum displacement value over x axis')
-parser.add_argument('--max_displacement_y', type=int, default=1, help='Maximum displacement value over y axis')
+parser.add_argument('--max_displacement_x', type=int, default=20, help='Maximum displacement value over x axis')
+parser.add_argument('--max_displacement_y', type=int, default=5, help='Maximum displacement value over y axis')
 parser.add_argument('--max_negative_displacement_x', type=int, default=0,
                     help='Maximum negative displacement value over x axis')
-parser.add_argument('--max_negative_displacement_y', type=int, default=0,
+parser.add_argument('--max_negative_displacement_y', type=int, default=5,
                     help='Maximum negative displacement value over y axis')
 parser.add_argument('--h_norm', type=int, default=1, help='Order of norm in h function')
-parser.add_argument('--alpha', type=int, default=10, help='Smoothing alpha parameter')
+parser.add_argument('--alpha', type=int, default=2, help='Smoothing alpha parameter')
 parser.add_argument('--beta', type=int, default=30, help='Smoothing beta parameter')
 args = parser.parse_args()
 
@@ -47,20 +48,26 @@ def get_displacement(left_image, right_image,
     start_time = time.time()
     current_time = time.time()
     W, H, C = left_image.shape  # W - width, H - height, C - number of channels
-    D = max_disp_x * max_disp_y + max_negative_disp_x * max_negative_disp_y
+    D = (max_disp_x + max_negative_disp_x + 1) * (max_disp_y + max_negative_disp_y + 1)
     displacement_map = np.zeros((W, H), dtype=np.int32)
 
     # NOTE: requires lots of memory
     L_expanded = expanded_array(left_image, D)
     R_shifted = np.full((W, H, C, D), 10000000, dtype=np.int32)  # initialize with infinity
-    for d in range(max_disp_x * max_disp_y):
-        d_x = d % max_disp_x
-        d_y = d // max_disp_x
-        R_shifted[d_y:, d_x:, :, d] = right_image[:W - d_y, :H - d_x, :]
-    for d in range(max_negative_disp_x * max_negative_disp_y):
-        d_x = d % max_negative_disp_x
-        d_y = d // max_negative_disp_x
-        R_shifted[:W - d_y, :H - d_x, :, max_disp_x * max_disp_y + d] = right_image[d_y:, d_x:, :]
+    k = 0
+    for d_x in range(-max_negative_disp_x, max_disp_x + 1):
+        for d_y in range(-max_negative_disp_y, max_disp_y + 1):
+            if d_x >= 0:
+                if d_y >= 0:
+                    R_shifted[d_y:, d_x:, :, k] = right_image[:-d_y if d_y != 0 else W, :-d_x if d_x != 0 else H, :]
+                else:
+                    R_shifted[:d_y, d_x:, :, k] = right_image[-d_y:, :-d_x if d_x != 0 else H, :]
+            else:
+                if d_y >= 0:
+                    R_shifted[d_y:, :d_x, :, k] = right_image[:-d_y if d_y != 0 else W, -d_x:, :]
+                else:
+                    R_shifted[:d_y, :d_x, :, k] = right_image[-d_y:, -d_x:, :]
+            k += 1
     h_table = h_func(L_expanded, R_shifted, axis=2)  # h_table.shape = [W, H, D]
     print('Created h_table. Time elapsed: {:.2f} seconds'.format(time.time() - current_time))
     current_time = time.time()
