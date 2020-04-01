@@ -1,5 +1,7 @@
 import argparse
 import numpy as np
+import matplotlib
+matplotlib.use("TKAgg")
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import time
@@ -96,17 +98,18 @@ def get_images_and_disparity_map():
     image_files = {
         'cones': {'left': 'images/Cones/view1.png', 'right': 'images/Cones/view2.png'},
         'drumsticks': {'left': 'images/Drumsticks/view1.png', 'right': 'images/Drumsticks/view2.png'},
-        'test': {'left': 'images/Test/left.png', 'right': 'images/Test/right.png'}
+        'test': {'left': 'images/Test/left.png', 'right': 'images/Test/right.png'},
+        'home': {'left': 'images/Home/img_left.png', 'right': 'images/Home/img_right.png'},
     }
-    default_image = 'cones'
+    default_image = 'home'
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--left_image', type=str, default=image_files[default_image]['left'], help='Path to left image')
     parser.add_argument('--right_image', type=str, default=image_files[default_image]['right'],
                         help='Path to right image')
-    parser.add_argument('--max_displacement_x', type=int, default=30, help='Maximum displacement value over x axis')
-    parser.add_argument('--max_displacement_y', type=int, default=0, help='Maximum displacement value over y axis')
-    parser.add_argument('--max_negative_displacement_x', type=int, default=0,
+    parser.add_argument('--max_displacement_x', type=int, default=0, help='Maximum displacement value over x axis')
+    parser.add_argument('--max_displacement_y', type=int, default=10, help='Maximum displacement value over y axis')
+    parser.add_argument('--max_negative_displacement_x', type=int, default=50,
                         help='Maximum negative displacement value over x axis')
     parser.add_argument('--max_negative_displacement_y', type=int, default=0,
                         help='Maximum negative displacement value over y axis')
