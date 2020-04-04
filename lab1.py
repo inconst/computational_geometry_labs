@@ -99,7 +99,7 @@ def get_images_and_disparity_map():
         'cones': {'left': 'images/Cones/view1.png', 'right': 'images/Cones/view2.png'},
         'drumsticks': {'left': 'images/Drumsticks/view1.png', 'right': 'images/Drumsticks/view2.png'},
         'test': {'left': 'images/Test/left.png', 'right': 'images/Test/right.png'},
-        'home': {'left': 'images/Home/img_left.png', 'right': 'images/Home/img_right.png'},
+        'home': {'left': 'images/Home/left.png', 'right': 'images/Home/right.png'},
     }
     default_image = 'home'
 
@@ -107,9 +107,9 @@ def get_images_and_disparity_map():
     parser.add_argument('--left_image', type=str, default=image_files[default_image]['left'], help='Path to left image')
     parser.add_argument('--right_image', type=str, default=image_files[default_image]['right'],
                         help='Path to right image')
-    parser.add_argument('--max_displacement_x', type=int, default=0, help='Maximum displacement value over x axis')
-    parser.add_argument('--max_displacement_y', type=int, default=10, help='Maximum displacement value over y axis')
-    parser.add_argument('--max_negative_displacement_x', type=int, default=50,
+    parser.add_argument('--max_displacement_x', type=int, default=40, help='Maximum displacement value over x axis')
+    parser.add_argument('--max_displacement_y', type=int, default=5, help='Maximum displacement value over y axis')
+    parser.add_argument('--max_negative_displacement_x', type=int, default=0,
                         help='Maximum negative displacement value over x axis')
     parser.add_argument('--max_negative_displacement_y', type=int, default=0,
                         help='Maximum negative displacement value over y axis')

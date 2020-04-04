@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from matplotlib.collections import LineCollection
 
 
-def ransac(X1, X2, max_iterations=100, eps=1.0):
+def ransac(X1, X2, max_iterations=1000, eps=0.1):
     print('Finding fundamental matrix ........................')
     num_points = X1.shape[0]
     best_k, best_F = 0, np.zeros((3, 3))
@@ -47,7 +47,8 @@ def main():
     for i in range(filter_neighbors, W - filter_neighbors):
         for j in range(filter_neighbors, H - filter_neighbors):
             if not np.array_equal(disparity_map[i, j], np.zeros(2)):
-                window = disparity_map[i-filter_neighbors:i+filter_neighbors+1, j-filter_neighbors:j+filter_neighbors+1]
+                window = disparity_map[i - filter_neighbors:i + filter_neighbors + 1,
+                         j - filter_neighbors:j + filter_neighbors + 1]
                 equal_neighbors = np.sum(np.equal(window, disparity_map[i, j]), axis=2) == 2
                 if equal_neighbors.all():
                     filter_mask[i, j] = True
@@ -67,15 +68,46 @@ def main():
     print('Epipole right:', e2)
 
     # visualize some point correspondences and epipolar points
-    random_indices = np.random.choice(num_filtered, 20)
+    random_indices = np.random.choice(num_filtered, 5)
     random_X1 = filtered_X1[random_indices]
     random_X2 = filtered_X2[random_indices]
     fig, ax = plt.subplots()
+    ax.set_title("Point correspondences")
     plt.imshow(np.concatenate((left, right), axis=1))
-    plt.scatter(e1[0], e1[1], c='red')
-    plt.scatter(H + e1[0], e1[1], c='red')
-    line_segments = LineCollection([[random_X1[i], np.array([H, 0]) + random_X2[i]] for i in range(random_X1.shape[0])], colors='yellow')
+    line_segments = LineCollection([[random_X1[i], np.array([H, 0]) + random_X2[i]] for i in range(random_X1.shape[0])],
+                                   colors='yellow')
     ax.add_collection(line_segments)
+
+    fig, ax = plt.subplots()
+    ax.set_title("Epipolar lines")
+    offset = 20
+    left = np.concatenate((left, np.zeros((W, offset, 3), dtype=left.dtype)), axis=1)
+    plt.imshow(np.concatenate((left, right), axis=1))
+
+    def image_border_intersection(p1, p2, W, H, offset=np.array([0, 0])):
+        # calculates intersection of line between points p1 and p2 with image borders
+        a = p1[1] - p2[1]
+        b = p2[0] - p1[0]
+        c = (p1[0] - p2[0]) * p1[1] + (p2[1] - p1[1]) * p1[0]
+        n = np.array([a, b, c]).squeeze()
+
+        left_vertical, right_vertical = np.array([1, 0, 0]), np.array([1, 0, -W])
+        top_horizontal, bottom_horizontal = np.array([0, 1, -H]), np.array([0, 1, 0])
+
+        valid_intersections = []
+        for line in [left_vertical, right_vertical, top_horizontal, bottom_horizontal]:
+            intersection = np.cross(n, line)
+            intersection = (intersection / intersection[2]).astype(np.int32)
+            if 0 <= intersection[0] <= W and 0 <= intersection[1] <= H:
+                valid_intersections.append(intersection[:2] + offset)
+        return valid_intersections
+
+    lines_1 = [image_border_intersection(e1, x, H - 1, W - 1) for x in random_X1]
+    lines_2 = [image_border_intersection(e2, x, H - 1, W - 1, np.array([H + offset, 0])) for x in random_X2]
+    lines = lines_1 + lines_2
+    line_segments = LineCollection(lines, colors='yellow')
+    ax.add_collection(line_segments)
+
     plt.show()
 
 
