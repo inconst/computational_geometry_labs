@@ -1,11 +1,10 @@
-from lab1 import get_images_and_disparity_map
 import numpy as np
 from scipy.linalg import null_space
 import matplotlib.pyplot as plt
 from matplotlib.collections import LineCollection
 
 
-def ransac(X1, X2, max_iterations=1000, eps=0.1):
+def ransac(X1, X2, max_iterations=10000, eps=0.001):
     print('Finding fundamental matrix ........................')
     num_points = X1.shape[0]
     best_k, best_F = 0, np.zeros((3, 3))
@@ -30,8 +29,9 @@ def ransac(X1, X2, max_iterations=1000, eps=0.1):
 
 
 def main():
-    left, right, disp_horizontal, disp_vertical = get_images_and_disparity_map()
-    disparity_map = np.stack((disp_horizontal, disp_vertical), axis=-1)
+    disparity_map = np.load('disp_map.npy')
+    left = np.load('left.npy')
+    right = np.load('right.npy')
     W, H, C = left.shape
     X1_points = np.transpose(np.mgrid[0:H:1, 0:W:1], (2, 1, 0))
     X2_points = X1_points.copy()

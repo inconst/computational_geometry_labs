@@ -1,6 +1,7 @@
 import argparse
 import numpy as np
 import matplotlib
+
 matplotlib.use("TKAgg")
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
@@ -83,11 +84,13 @@ def get_disparity_maps(left_image, right_image,
 
     # restore optimal path
     min_path_indices = np.argmin(DP_table[W - 1, :, :], axis=1)
-    disparity_map_horizontal[W - 1, :] = min_path_indices // (max_negative_disp_y + max_disp_y + 1) - max_negative_disp_x
+    disparity_map_horizontal[W - 1, :] = min_path_indices // (
+            max_negative_disp_y + max_disp_y + 1) - max_negative_disp_x
     disparity_map_vertical[W - 1, :] = min_path_indices % (max_negative_disp_y + max_disp_y + 1) - max_negative_disp_y
     for x in reversed(range(W - 1)):
         min_path_indices = path_table[x, :, :][np.arange(H), min_path_indices]
-        disparity_map_horizontal[x, :] = min_path_indices // (max_negative_disp_y + max_disp_y + 1) - max_negative_disp_x
+        disparity_map_horizontal[x, :] = min_path_indices // (
+                max_negative_disp_y + max_disp_y + 1) - max_negative_disp_x
         disparity_map_vertical[x, :] = min_path_indices % (max_negative_disp_y + max_disp_y + 1) - max_negative_disp_y
 
     print('Finished generating disparity map. Total time elapsed: {:.2f} seconds'.format(time.time() - start_time))
@@ -100,18 +103,19 @@ def get_images_and_disparity_map():
         'drumsticks': {'left': 'images/Drumsticks/view1.png', 'right': 'images/Drumsticks/view2.png'},
         'test': {'left': 'images/Test/left.png', 'right': 'images/Test/right.png'},
         'home': {'left': 'images/Home/left.png', 'right': 'images/Home/right.png'},
+        'hanger': {'left': 'images/Hanger/left.png', 'right': 'images/Hanger/right.png'},
     }
-    default_image = 'home'
+    default_image = 'hanger'
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--left_image', type=str, default=image_files[default_image]['left'], help='Path to left image')
     parser.add_argument('--right_image', type=str, default=image_files[default_image]['right'],
                         help='Path to right image')
-    parser.add_argument('--max_displacement_x', type=int, default=40, help='Maximum displacement value over x axis')
-    parser.add_argument('--max_displacement_y', type=int, default=5, help='Maximum displacement value over y axis')
+    parser.add_argument('--max_displacement_x', type=int, default=25, help='Maximum displacement value over x axis')
+    parser.add_argument('--max_displacement_y', type=int, default=0, help='Maximum displacement value over y axis')
     parser.add_argument('--max_negative_displacement_x', type=int, default=0,
                         help='Maximum negative displacement value over x axis')
-    parser.add_argument('--max_negative_displacement_y', type=int, default=0,
+    parser.add_argument('--max_negative_displacement_y', type=int, default=25,
                         help='Maximum negative displacement value over y axis')
     parser.add_argument('--h_norm', type=int, default=1, help='Order of norm in h function')
     parser.add_argument('--alpha', type=int, default=2, help='Smoothing alpha parameter')
@@ -147,6 +151,14 @@ def visualize_results(left, right, disp_horizontal, disp_vertical):
     plt.show()
 
 
+def save(left, right, disp_horizontal, disp_vertical):
+    disparity_map = np.stack((disp_horizontal, disp_vertical), axis=-1)
+    np.save('disp_map.npy', disparity_map)
+    np.save('left.npy', left)
+    np.save('right.npy', right)
+
+
 if __name__ == '__main__':
     l, r, d_h, d_v = get_images_and_disparity_map()
     visualize_results(l, r, d_h, d_v)
+    save(l, r, d_h, d_v)
