@@ -6,6 +6,7 @@ matplotlib.use("TKAgg")
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import time
+import os
 
 
 def h_func(L, R, norm, axis=2):
@@ -76,12 +77,6 @@ def get_disparity_maps(left_image, right_image,
         DP_table[x, :, :] = h_table[x, :, :] + min_values
     print('Filled DP_table. Time elapsed: {:.2f} seconds'.format(time.time() - current_time))
 
-    '''
-    Reasons:
-        1. indexing doesn't work at all 
-        2. indexing is inverted only in case of both x and y disparities
-    '''
-
     # restore optimal path
     min_path_indices = np.argmin(DP_table[W - 1, :, :], axis=1)
     disparity_map_horizontal[W - 1, :] = min_path_indices // (
@@ -133,7 +128,7 @@ def get_images_and_disparity_map():
                                                         args.max_displacement_x, args.max_displacement_y,
                                                         args.max_negative_displacement_x,
                                                         args.max_negative_displacement_y)
-    return left, right, disp_horizontal, disp_vertical
+    return left, right, disp_horizontal, disp_vertical, os.path.dirname(image_files[default_image]['left'])
 
 
 def visualize_results(left, right, disp_horizontal, disp_vertical):
@@ -151,14 +146,14 @@ def visualize_results(left, right, disp_horizontal, disp_vertical):
     plt.show()
 
 
-def save(left, right, disp_horizontal, disp_vertical):
+def save(left, right, disp_horizontal, disp_vertical, image_dir):
     disparity_map = np.stack((disp_horizontal, disp_vertical), axis=-1)
-    np.save('disp_map.npy', disparity_map)
-    np.save('left.npy', left)
-    np.save('right.npy', right)
+    np.save(os.path.join(image_dir, 'disp_map.npy'), disparity_map)
+    np.save(os.path.join(image_dir, 'left.npy'), left)
+    np.save(os.path.join(image_dir, 'right.npy'), right)
 
 
 if __name__ == '__main__':
-    l, r, d_h, d_v = get_images_and_disparity_map()
+    l, r, d_h, d_v, img_dir = get_images_and_disparity_map()
     visualize_results(l, r, d_h, d_v)
-    save(l, r, d_h, d_v)
+    save(l, r, d_h, d_v, img_dir)

@@ -1,7 +1,11 @@
+import matplotlib
 import numpy as np
 from scipy.linalg import null_space
+
+matplotlib.use("TKAgg")
 import matplotlib.pyplot as plt
 from matplotlib.collections import LineCollection
+import os
 
 
 def ransac(X1, X2, max_iterations=10000, eps=0.001):
@@ -28,39 +32,46 @@ def ransac(X1, X2, max_iterations=10000, eps=0.001):
     return best_F
 
 
-def main():
-    disparity_map = np.load('disp_map.npy')
-    left = np.load('left.npy')
-    right = np.load('right.npy')
-    W, H, C = left.shape
-    X1_points = np.transpose(np.mgrid[0:H:1, 0:W:1], (2, 1, 0))
+def create_point_correspondences(H, W, disparity_map=None, filter_points=True):
+    X1_points = np.transpose(np.mgrid[0:W:1, 0:H:1], (2, 1, 0))
     X2_points = X1_points.copy()
-    X2_points -= disparity_map
+    if disparity_map is not None:
+        X2_points -= disparity_map
     # check if points within image boundaries
-    assert not ((X2_points[:, :, 0] < 0) | (X2_points[:, :, 0] >= H) |
-                (X2_points[:, :, 1] < 0) | (X2_points[:, :, 1] >= W)).any()
+    assert not ((X2_points[:, :, 0] < 0) | (X2_points[:, :, 0] >= W) |
+                (X2_points[:, :, 1] < 0) | (X2_points[:, :, 1] >= H)).any()
 
-    # filter points
-    print('Filtering points ........................')
-    filter_mask = np.zeros((W, H), dtype=np.bool)
-    filter_neighbors = 1
-    for i in range(filter_neighbors, W - filter_neighbors):
-        for j in range(filter_neighbors, H - filter_neighbors):
-            if not np.array_equal(disparity_map[i, j], np.zeros(2)):
-                window = disparity_map[i - filter_neighbors:i + filter_neighbors + 1,
-                         j - filter_neighbors:j + filter_neighbors + 1]
-                equal_neighbors = np.sum(np.equal(window, disparity_map[i, j]), axis=2) == 2
-                if equal_neighbors.all():
-                    filter_mask[i, j] = True
-    num_filtered = filter_mask.sum()
-    print('Total number of filtered points', num_filtered)
-    filtered_X1 = X1_points[filter_mask]
-    filtered_X2 = X2_points[filter_mask]
+    if filter_points:
+        print('Filtering points ........................')
+        filter_mask = np.zeros((H, W), dtype=np.bool)
+        filter_neighbors = 1
+        for i in range(filter_neighbors, H - filter_neighbors):
+            for j in range(filter_neighbors, W - filter_neighbors):
+                if not np.array_equal(disparity_map[i, j], np.zeros(2)):
+                    window = disparity_map[i - filter_neighbors:i + filter_neighbors + 1,
+                             j - filter_neighbors:j + filter_neighbors + 1]
+                    equal_neighbors = np.sum(np.equal(window, disparity_map[i, j]), axis=2) == 2
+                    if equal_neighbors.all():
+                        filter_mask[i, j] = True
+        X1 = X1_points[filter_mask]
+        X2 = X2_points[filter_mask]
+    else:
+        X1 = X1_points.reshape((-1, 2))
+        X2 = X2_points.reshape((-1, 2))
+
+    return X1, X2
+
+
+def calculate_fundamental_matrix(left, right, disparity_map):
+    H, W, C = left.shape
+    X1, X2 = create_point_correspondences(H, W, disparity_map)
+    print('Total number of filtered points', len(X1))
 
     # find fundamental matrix and epipolar points
-    X1_homogeneous = np.append(filtered_X1, np.ones([filtered_X1.shape[0], 1], dtype=np.int32), axis=1)
-    X2_homogeneous = np.append(filtered_X2, np.ones([filtered_X2.shape[0], 1], dtype=np.int32), axis=1)
+    X1_homogeneous = np.append(X1, np.ones([X1.shape[0], 1], dtype=np.int32), axis=1)
+    X2_homogeneous = np.append(X2, np.ones([X2.shape[0], 1], dtype=np.int32), axis=1)
     F = ransac(X1_homogeneous, X2_homogeneous)
+
     e1, e2 = null_space(F.T), null_space(F)
     e1 /= e1[2]
     e2 /= e2[2]
@@ -68,20 +79,29 @@ def main():
     print('Epipole right:', e2)
 
     # visualize some point correspondences and epipolar points
-    random_indices = np.random.choice(num_filtered, 5)
-    random_X1 = filtered_X1[random_indices]
-    random_X2 = filtered_X2[random_indices]
+    random_indices = np.random.choice(len(X1), 5)
+    random_X1, random_X2 = X1[random_indices], X2[random_indices]
+    # visualize_correspondences(left, right, random_X1, random_X2)
+    visualize_epipolar_lines(left, right, e1, e2, random_X1, random_X2)
+
+    return F
+
+
+def visualize_correspondences(left, right, X1, X2, title="Point correspondences"):
+    _, W, _ = left.shape
     fig, ax = plt.subplots()
-    ax.set_title("Point correspondences")
+    ax.set_title(title)
     plt.imshow(np.concatenate((left, right), axis=1))
-    line_segments = LineCollection([[random_X1[i], np.array([H, 0]) + random_X2[i]] for i in range(random_X1.shape[0])],
+    line_segments = LineCollection([[X1[i], np.array([W, 0]) + X2[i]] for i in range(X1.shape[0])],
                                    colors='yellow')
     ax.add_collection(line_segments)
 
+
+def visualize_epipolar_lines(left, right, e1, e2, x1, x2, title="Epipolar lines", img_offset=20):
+    H, W, C = left.shape
     fig, ax = plt.subplots()
-    ax.set_title("Epipolar lines")
-    offset = 20
-    left = np.concatenate((left, np.zeros((W, offset, 3), dtype=left.dtype)), axis=1)
+    ax.set_title(title)
+    left = np.concatenate((left, np.zeros((H, img_offset, 3), dtype=left.dtype)), axis=1)
     plt.imshow(np.concatenate((left, right), axis=1))
 
     def image_border_intersection(p1, p2, W, H, offset=np.array([0, 0])):
@@ -102,8 +122,8 @@ def main():
                 valid_intersections.append(intersection[:2] + offset)
         return valid_intersections
 
-    lines_1 = [image_border_intersection(e1, x, H - 1, W - 1) for x in random_X1]
-    lines_2 = [image_border_intersection(e2, x, H - 1, W - 1, np.array([H + offset, 0])) for x in random_X2]
+    lines_1 = [image_border_intersection(e1, x, W - 1, H - 1) for x in x1]
+    lines_2 = [image_border_intersection(e2, x, W - 1, H - 1, np.array([W + img_offset, 0])) for x in x2]
     lines = lines_1 + lines_2
     line_segments = LineCollection(lines, colors='yellow')
     ax.add_collection(line_segments)
@@ -112,4 +132,10 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    dir_name = 'Hanger'
+    image_dir = os.path.join('images', dir_name)
+    disparity_map = np.load(os.path.join(image_dir, 'disp_map.npy'))
+    left = np.load(os.path.join(image_dir, 'left.npy'))
+    right = np.load(os.path.join(image_dir, 'right.npy'))
+    F_matrix = calculate_fundamental_matrix(left, right, disparity_map)
+    np.save(os.path.join(image_dir, 'f_matrix.npy'), F_matrix)
