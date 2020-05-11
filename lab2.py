@@ -8,7 +8,7 @@ from matplotlib.collections import LineCollection
 import os
 
 
-def ransac(X1, X2, max_iterations=10000, eps=0.001):
+def ransac(X1, X2, max_iterations=10000, eps=0.00001):
     print('Finding fundamental matrix ........................')
     num_points = X1.shape[0]
     best_k, best_F = 0, np.zeros((3, 3))
@@ -24,7 +24,7 @@ def ransac(X1, X2, max_iterations=10000, eps=0.001):
         real_roots = roots[~np.iscomplex(roots)]
         for root in real_roots:
             F = (F1 + root * F2)
-            k = np.sum(np.abs(np.sum(np.dot(X1, F) * X2, axis=1)) < eps)
+            k = np.sum(np.abs(np.einsum('ij,ji->i', np.dot(X1, F), X2.T)) < eps)
             if k > best_k:
                 best_k, best_F = k, F
     print('Best K: ', best_k)
@@ -64,7 +64,7 @@ def create_point_correspondences(H, W, disparity_map=None, filter_points=True):
 
 def calculate_fundamental_matrix(left, right, disparity_map):
     H, W, C = left.shape
-    X1, X2 = create_point_correspondences(H, W, disparity_map)
+    X1, X2 = create_point_correspondences(H, W, disparity_map, filter_points=True)
     print('Total number of filtered points', len(X1))
 
     # find fundamental matrix and epipolar points
