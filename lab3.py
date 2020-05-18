@@ -23,6 +23,10 @@ def visualize_rectified(left, right, title="Rectified images", img_offset=20):
 def rectify_images(left, right, F, disparity_map):
     H, W, C = left.shape
     e1, e2 = null_space(F.T).flatten(), null_space(F).flatten()
+    if e1[2] < 0:
+        e1 = -e1
+    if e2[2] < 0:
+        e2 = -e2
     e2_norm = e2 / np.linalg.norm(e2)
 
     # calculate right rectifying matrix
@@ -81,7 +85,7 @@ def rectify_images(left, right, F, disparity_map):
 
 
 if __name__ == '__main__':
-    dir_name = 'Hanger'
+    dir_name = 'Home2'
     image_dir = os.path.join('images', dir_name)
     left = np.load(os.path.join(image_dir, 'left.npy'))
     right = np.load(os.path.join(image_dir, 'right.npy'))

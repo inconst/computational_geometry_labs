@@ -8,7 +8,7 @@ from matplotlib.collections import LineCollection
 import os
 
 
-def ransac(X1, X2, max_iterations=10000, eps=0.00001):
+def ransac(X1, X2, max_iterations=10000, eps=0.001):
     print('Finding fundamental matrix ........................')
     num_points = X1.shape[0]
     best_k, best_F = 0, np.zeros((3, 3))
@@ -24,7 +24,7 @@ def ransac(X1, X2, max_iterations=10000, eps=0.00001):
         real_roots = roots[~np.iscomplex(roots)]
         for root in real_roots:
             F = (F1 + root * F2)
-            k = np.sum(np.abs(np.einsum('ij,ji->i', np.dot(X1, F), X2.T)) < eps)
+            k = np.sum(np.abs(np.einsum('ij,ji->i', np.dot(X1, F.T), X2.T)) < eps)
             if k > best_k:
                 best_k, best_F = k, F
     print('Best K: ', best_k)
@@ -81,7 +81,7 @@ def calculate_fundamental_matrix(left, right, disparity_map):
     # visualize some point correspondences and epipolar points
     random_indices = np.random.choice(len(X1), 5)
     random_X1, random_X2 = X1[random_indices], X2[random_indices]
-    # visualize_correspondences(left, right, random_X1, random_X2)
+    visualize_correspondences(left, right, random_X1, random_X2)
     visualize_epipolar_lines(left, right, e1, e2, random_X1, random_X2)
 
     return F
@@ -132,7 +132,7 @@ def visualize_epipolar_lines(left, right, e1, e2, x1, x2, title="Epipolar lines"
 
 
 if __name__ == '__main__':
-    dir_name = 'Hanger'
+    dir_name = 'Home2'
     image_dir = os.path.join('images', dir_name)
     disparity_map = np.load(os.path.join(image_dir, 'disp_map.npy'))
     left = np.load(os.path.join(image_dir, 'left.npy'))

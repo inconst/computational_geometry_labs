@@ -99,18 +99,19 @@ def get_images_and_disparity_map():
         'test': {'left': 'images/Test/left.png', 'right': 'images/Test/right.png'},
         'home': {'left': 'images/Home/left.png', 'right': 'images/Home/right.png'},
         'hanger': {'left': 'images/Hanger/left.png', 'right': 'images/Hanger/right.png'},
+        'home2': {'left': 'images/Home2/left.png', 'right': 'images/Home2/right.png'}
     }
-    default_image = 'hanger'
+    default_image = 'home2'
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--left_image', type=str, default=image_files[default_image]['left'], help='Path to left image')
     parser.add_argument('--right_image', type=str, default=image_files[default_image]['right'],
                         help='Path to right image')
-    parser.add_argument('--max_displacement_x', type=int, default=25, help='Maximum displacement value over x axis')
-    parser.add_argument('--max_displacement_y', type=int, default=0, help='Maximum displacement value over y axis')
+    parser.add_argument('--max_displacement_x', type=int, default=30, help='Maximum displacement value over x axis')
+    parser.add_argument('--max_displacement_y', type=int, default=25, help='Maximum displacement value over y axis')
     parser.add_argument('--max_negative_displacement_x', type=int, default=0,
                         help='Maximum negative displacement value over x axis')
-    parser.add_argument('--max_negative_displacement_y', type=int, default=25,
+    parser.add_argument('--max_negative_displacement_y', type=int, default=0,
                         help='Maximum negative displacement value over y axis')
     parser.add_argument('--h_norm', type=int, default=1, help='Order of norm in h function')
     parser.add_argument('--alpha', type=int, default=2, help='Smoothing alpha parameter')
@@ -130,7 +131,7 @@ def get_images_and_disparity_map():
                                                         args.max_negative_displacement_y)
     return left, right, disp_horizontal, disp_vertical, os.path.dirname(image_files[default_image]['left'])
 
-
+    
 def visualize_results(left, right, disp_horizontal, disp_vertical):
     disp_horizontal_image = get_image_from_disparity_map(disp_horizontal)
     disp_vertical_image = get_image_from_disparity_map(disp_vertical)
