@@ -54,8 +54,7 @@ def rectify_images(left, right, F, disparity_map):
     least_squares = np.dot(np.dot(np.linalg.inv(np.dot(A.T, A)), A.T), b).flatten()
     abc_matrix = np.stack((least_squares, np.array([0, 1, 0]), np.array([0, 0, 1])), axis=0)
     print('abc matrix: \n', abc_matrix)
-    R_l = M
-    # R_l = abc_matrix * M
+    R_l = np.dot(abc_matrix, M)
     R_l_inv = np.linalg.inv(R_l)
 
     # fill rectified images using R_r_inv and R_l_inv
