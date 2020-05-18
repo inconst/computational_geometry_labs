@@ -19,14 +19,20 @@ def ransac(X1, X2, max_iterations=10000, eps=0.001):
         ns = null_space(X).T
         F1, F2 = ns[0, :].reshape(3, 3), ns[1, :].reshape(3, 3)
         det_F1, det_F2 = np.linalg.det(F1), np.linalg.det(F2)
-        roots = np.roots([det_F2, det_F2 * np.trace(np.dot(np.linalg.inv(F2), F1)),
-                          det_F1 * np.trace(np.dot(np.linalg.inv(F1), F2)), det_F1])
-        real_roots = roots[~np.iscomplex(roots)]
-        for root in real_roots:
-            F = (F1 + root * F2)
+        if np.abs(det_F1) < 1e-8 or np.abs(det_F2) < 1e-8:
+            F = F1 if np.abs(det_F1) < 1e-8 else F2
             k = np.sum(np.abs(np.einsum('ij,ji->i', np.dot(X1, F.T), X2.T)) < eps)
             if k > best_k:
                 best_k, best_F = k, F
+        else:
+            roots = np.roots([det_F2, det_F2 * np.trace(np.dot(np.linalg.inv(F2), F1)),
+                              det_F1 * np.trace(np.dot(np.linalg.inv(F1), F2)), det_F1])
+            real_roots = roots[~np.iscomplex(roots)]
+            for root in real_roots:
+                F = (F1 + root * F2)
+                k = np.sum(np.abs(np.einsum('ij,ji->i', np.dot(X1, F.T), X2.T)) < eps)
+                if k > best_k:
+                    best_k, best_F = k, F
     print('Best K: ', best_k)
     print('Best F: ', best_F)
     return best_F
