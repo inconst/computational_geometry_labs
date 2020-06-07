@@ -101,6 +101,7 @@ def visualize_correspondences(left, right, X1, X2, title="Point correspondences"
     line_segments = LineCollection([[X1[i], np.array([W, 0]) + X2[i]] for i in range(X1.shape[0])],
                                    colors='yellow')
     ax.add_collection(line_segments)
+    plt.show()
 
 
 def visualize_epipolar_lines(left, right, e1, e2, x1, x2, title="Epipolar lines", img_offset=20):
